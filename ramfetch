@@ -21,48 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+echo "\e[1;31mramfetch has been moved to https://codeberg.org/o69mar/ramfetch, please install ramfetch from there\e[0m"
+exit 1
 
-if [ "$TERM" = "linux" ]; then
-# colors for tty sessions
-BLK='\033[0;30m'
-RED='\033[0;31m'
-GRN='\033[1;32m'
-YEL='\033[1;33m'
-BLU='\033[0;34m'
-PURP='\033[0;35m'
-CYN='\033[0;36m'
-WHT='\033[0;37m'
-else
-# colors for gui
-BLK='\033[0;30m'
-RED='\033[0;31m'
-GRN='\033[2;32m'
-YEL='\033[0;33m'
-BLU='\033[0;34m'
-PURP='\033[0;35m'
-CYN='\033[0;36m'
-WHT='\033[0;37m'
-fi
-
-# green arrow
-GRN_ARROW="$(printf "%b->%b" "${GRN}" "${WHT}")"
-# hostname/hostname length
-HOST_AND_USER_LEN=$(( ${#HOSTNAME} + ${#USER} + 1 ))
-HOST_AND_USER="$(printf "%b%s%b%c%b%s%b" "${GRN}" "$USER" "${WHT}" "@" "${YEL}" "$HOSTNAME" "${WHT}")"
-# colorblocks
-COLORBLOCKS="$(printf "%b%s%b%s%b%s%b%s%b%s%b%s%b%s%b%s%b" "${BLK}" "███" "${RED}" "███" "${GRN}" "███" "${BLU}" "███" "${YEL}" "███" "${PURP}" "███" "${CYN}" "███" "${WHT}" "███" "${WHT}")"
-# yellow part
-YELLOW_PART="$(printf "%b" "${YEL}")"
-# green part
-GREEN_PART="$(printf "%b" "${GRN}")"
-# end
-END="$(printf "%b" "${WHT}")"
-# blue arrow
-BLUE_ARROW="$(printf "%b->%b" "${BLU}" "${WHT}")"
-# sets version
-RAMFETCH_VER="v1.0.4"
-
-# help and version
 if [ "$*" = "--help" ] || [ "$*" = "-h" ]; then
     cat <<EOF
 Usage: ramfetch [-h|-V]
@@ -81,80 +42,3 @@ https://gitlab.com/o69mar/ramfetch
 EOF
 exit 0
 fi
-
-
-# Sed input. Basically use regex to get the number + kB part and replace it itself to ensure the capture group is printed
-# 's/[^0-9]*\([0-9]* kB\)/\1/'
-# 's' - subsitution
-# '/' - regex start
-# '[^0-9]*' - match all except 0-9 zero or more times
-# '\' - escape parenthesis
-# '(' - capture group, everything inside will be saved as result of it
-# '[0-9]*' match 0-9 zero or more times exluding unit (' kB') [unit is always kB]
-# '\' - escape parenthesis
-# ')' - capture group close
-# ' kB' -
-# '/' subsitution end, replace start
-# '\1' - everything from capture group
-# '/' - end replace
-
-# Fetches memory information from /proc/meminfo
-# Desired feild captured with case, sed extracts value
-# numfmt converts kB to more readable format
-
-format_value() {
-  printf "%s" "$@" | 
-    sed 's/[^0-9]*\([0-9]*\) kB/\1/' |
-    numfmt --to=iec-i --from-unit=1024 --suffix=B --format="%9.2f" --invalid='ignore'
-}
-
-while read -r REPLY; do
-    case "${REPLY}" in
-        (MemTotal:*)        MEM_TOTAL=$(format_value "$REPLY") ;;
-        (MemFree:*)         MEM_FREE=$(format_value "$REPLY") ;;
-        (MemAvailable:*)    MEM_AVAILABLE=$(format_value "$REPLY") ;;
-        (MemTotal:*)        MEM_TOTAL=$(format_value "$REPLY") ;;
-        (MemAvailable:*)    MEM_AVAILABLE=$(format_value "$REPLY") ;;
-        (WritebackTmp:*)    WRITE_BACK_TMP=$(format_value "$REPLY") ;;
-        (VmallocTotal:*)    VMALLOC_TOTAL=$(format_value "$REPLY") ;;
-        (VmallocUsed:*)     VMALLOC_USED=$(format_value "$REPLY") ;;
-        (Mapped:*)          MAPPED=$(format_value "$REPLY") ;;
-        (Buffers:*)         BUFFERS=$(format_value "$REPLY") ;;
-        (Cached:*)          CACHED=$(format_value "$REPLY") ;;
-        (SwapTotal:*)       SWAP_TOTAL=$(format_value "$REPLY") ;;
-        (SwapFree:*)        SWAP_FREE=$(format_value "$REPLY") ;; 
-        (Zswap:*)           ZSWAP=$(format_value "$REPLY") ;; 
-        (Zswapped:*)        ZSWAPPED=$(format_value "$REPLY") ;;
-        (SwapCached:*)      SWAP_CACHED=$(format_value "$REPLY") ;;
-        (Dirty:*)           DIRTY=$(format_value "$REPLY") ;;
-        (KernelStack:*)     KERNEL_STACK=$(format_value "$REPLY") ;; 
-        (Percpu:*)          PER_CPU=$(format_value "$REPLY") ;;
-    esac
-done < /proc/meminfo
-
-# output
-cat <<EOF
-
-$GREEN_PART   ████████████████████████████     $HOST_AND_USER
-$GREEN_PART ████████████████████████████████$END   $(printf '%0.s-' $(seq 1 "$HOST_AND_USER_LEN"))
-$GREEN_PART ████      ████      ███      ███$END   RAM Total $GRN_ARROW $(printf "\t") ${MEM_TOTAL:-null}
-$GREEN_PART ████      ████      ███      ███$END   RAM Free $GRN_ARROW $(printf "\t") ${MEM_FREE:-null}
-$GREEN_PART ████      ████      ███      ███$END   RAM Available $GRN_ARROW $(printf "\t") ${MEM_AVAILABLE:-null}
-$GREEN_PART ████      ████      ███      ███$END   Buffers $GRN_ARROW $(printf "\t\t") ${BUFFERS:-null}
-$GREEN_PART ████████████████████████████████$END   Cached $GRN_ARROW $(printf "\t\t") ${CACHED:-null}
-$GREEN_PART ██████████████████   ███████████$END   Swap Total $GRN_ARROW  $(printf "\t") ${SWAP_TOTAL:-null}
-$YELLOW_PART ██████████████████   ███████████$END   Swap Free $GRN_ARROW  $(printf "\t") ${SWAP_FREE:-null}
-                                    Zswap $GRN_ARROW $(printf "\t\t") ${ZSWAP:-null}
-                                    Zswapped $GRN_ARROW $(printf "\t") ${ZSWAPPED:-null}
-                                    Swap Cached $GRN_ARROW $(printf "\t") ${SWAP_CACHED:-null}
-                                    Dirty $GRN_ARROW $(printf "\t\t") ${DIRTY:-null}
-                                    Kernel Stack $GRN_ARROW $(printf "\t") ${KERNEL_STACK:-null}
-                                    Per CPU $GRN_ARROW $(printf "\t\t") ${PER_CPU:-null}
-                                    Writeback Tmp $GRN_ARROW $(printf "\t") ${WRITE_BACK_TMP:-null}
-                                    Vmalloc Total $GRN_ARROW $(printf "\t") ${VMALLOC_TOTAL:-null}
-                                    Vmalloc Used $GRN_ARROW $(printf "\t") ${VMALLOC_USED:-null}
-                                    Mapped $GRN_ARROW $(printf "\t\t") ${MAPPED:-null}
-
-                                    $COLORBLOCKS
-
-EOF
